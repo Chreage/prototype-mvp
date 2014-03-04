@@ -79,7 +79,12 @@ require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
 		material.color.set( mesh.userData.color === 'white' ? 'white' : 'grey' )
 		
 		// compute scale based on generation
-		var scale	= nGeneration === 0 ? 1 : 1/((nGeneration+0.8)/nGeneration)
+		// define a scale adjuster on the formula 1/(nGeneration+ScaleAdjust)/nGeneration)
+
+		var ScaleAdjust = 0.8 
+		
+		
+		var scale	= nGeneration === 0 ? 1 : 1/((nGeneration+ScaleAdjust)/nGeneration)
 		mesh.scale.multiplyScalar(scale)		
 
 		// bind 'mouseover'
