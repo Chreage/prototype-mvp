@@ -8,7 +8,7 @@ prototype minimum viable product
 
 For any list in entry, it returns a L-System that maps the contents as Spheres of diminishing radius in 2D
 
-MVP 1.xxx will be L-Systems mapped in 2D, of increasing detail, assymetry, complexity and fetching the top Alexa Websites
+* MVP 1.xxx will be L-Systems mapped in 2D, of increasing detail, assymetry, complexity and fetching the top Alexa Websites
 
 ** basically each click will just open a new tab of the corresponding site 
 ** there are 1 000 000 sites to map in total
@@ -16,21 +16,23 @@ MVP 1.xxx will be L-Systems mapped in 2D, of increasing detail, assymetry, compl
 *** if we take about six 3 branch L-systems that is 6*3^11 = 1 062 882
 
 
-MVP 2.xxx will consist of adding volume to the 2D mappings, e.g. by using simplex noise parametered to the Alexa rankings
+* MVP 2.xxx will consist of adding volume to the 2D mappings, e.g. by using simplex noise parametered to the Alexa rankings
 
 ** notes on the "Island" rendering: 
-*** let us adopt the following disposition by default:
-**** 7 ISLAND
-**** each ISLAND has 3 ISLET grouped together, separated by canals 
-**** each ISLET has 5 sectors
-**** each sector can have up to 3 L-systems
+** let us adopt the following disposition by default:
+** 7 ISLAND
+** each ISLAND has 3 ISLET grouped together, separated by canals 
+** each ISLET has 5 sectors
+** each SECTOR can have up to 3 L-systems
+Thus the general structure is 
+Domaine -> L-System -> Sector -> Islet -> Island
 
 
 
-MVP 3.xxx will consist of the previous one, except that inside site contents will be mapped by L-systems as well: eg: within wikipedia, one query gives a L-system
+* MVP 3.xxx will consist of the previous one, except that inside site contents will be mapped by L-systems as well: eg: within wikipedia, one query gives a L-system
 
 
-MVP 4.xxx will incorporate the metasearch engine
+* MVP 4.xxx will incorporate the metasearch engine
 
 
 
