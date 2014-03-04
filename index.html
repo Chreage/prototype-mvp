@@ -79,10 +79,10 @@ require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
 		material.color.set( mesh.userData.color === 'white' ? 'white' : 'grey' )
 		
 		// compute scale based on generation
-		// define a scale adjuster on the formula 1/(nGeneration+ScaleAdjust)/nGeneration)
-
-		var ScaleAdjust = 0.8 
 		
+			// define a scale adjuster on the formula 1/(nGeneration+ScaleAdjust)/nGeneration)
+
+			var ScaleAdjust = 0.8 
 		
 		var scale	= nGeneration === 0 ? 1 : 1/((nGeneration+ScaleAdjust)/nGeneration)
 		mesh.scale.multiplyScalar(scale)		
@@ -114,7 +114,7 @@ require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
 	// container.lookAt(new THREE.Vector3(0, 1, 0))
 	
 	
-	var maxGeneration	= 4;
+	var maxGeneration	= 6;
 	var firstGeneration	= createNode('white', 0)
 	var generation		= firstGeneration
 	container.add(generation)
