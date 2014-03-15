@@ -1,0 +1,14 @@
+{
+  "name": "threex.terrain",
+  "homepage": "https://github.com/jeromeetienne/threex.terrain",
+  "_release": "75a331198a",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "75a331198a640120af502565ab403b5aaa1b1096"
+  },
+  "_source": "git://github.com/jeromeetienne/threex.terrain.git",
+  "_target": "*",
+  "_originalSource": "threex.terrain",
+  "_direct": true
+}

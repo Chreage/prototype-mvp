@@ -5,12 +5,11 @@
 <script src="vendor/require.js/require.js"></script>
 <script src="vendor/three.js/examples/js/Detector.js"></script>
 <script src="vendor/threex.windowresize.js"></script>
-<script src="vendor/three.js/examples/js/SimplexNoise.js"></script>
 
 <body style='margin: 0px; background-color: white; overflow: hidden;'><script>
 require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
 	, 'bower_components/threex.domevents/threex.domevents.js'
-	, 'bower_components/threex.terrain/package.require.js'
+	, 'bower_components/threex.domevents/threex.linkify.js'
 	], function(){
 	// detect WebGL
 	if( !Detector.webgl ){
@@ -61,122 +60,134 @@ require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
 	scene.add( frontLight )
 	var backLight	= new THREE.DirectionalLight('white', 0.75)
 	backLight.position.set(-0.5, -0.5, -2)
-	scene.add( backLight )
+	scene.add( backLight )		
 
+	//////////////////////////////////////////////////////////////////////////////////
+	//		createNode()							//
+	//////////////////////////////////////////////////////////////////////////////////
 	
-	//////////////////////////////////////////////////////////////////////////////////
-	//		add an object and make it move					//
-	//////////////////////////////////////////////////////////////////////////////////
-
-	var nodes		= []
-	var maxGeneration	= 5
-	var position		= new THREE.Vector3(0,0,0)
-	var angle		= 0
-	buildLSystem(position, 0, angle)
-
-	function buildLSystem(position, nGeneration, angle){
-		if(nGeneration > maxGeneration )	return
-
+	function updateNode(mesh){
+		var color	= mesh.userData.color
+		var nGeneration	= mesh.userData.nGeneration
+		// compute scale based on generation
 		var scaleAdjust	= 0.96
-		var sizeAdjust	= 0.8
-		var baseDistance= 10
-		var deltaAngle	= Math.PI/6
+		var scale	= Math.pow(scaleAdjust,nGeneration)
 
-		var scale	= Math.pow(scaleAdjust, nGeneration)
-		var size	= Math.pow(sizeAdjust, nGeneration)*3
-		var distance	= baseDistance * scale
-
-		var node	= {
-			position	: position,
-			nGeneration	: nGeneration,
-			scale		: scale,
-			size		: size,
-		}
-		nodes.push(node)
-		
-
-		// child1
-		var positionChild1	= position.clone()
-		var angle1		= angle+deltaAngle
-		positionChild1.x	+= Math.cos(angle1)*distance
-		positionChild1.z	+= Math.sin(angle1)*distance
-		buildLSystem(positionChild1, nGeneration+1, angle1)
-
-		// child2
-		var positionChild2	= position.clone()
-		var angle2		= angle+deltaAngle+Math.PI
-		positionChild2.x	+= Math.cos(angle2)*distance
-		positionChild2.z	+= Math.sin(angle2)*distance
-		buildLSystem(positionChild2, nGeneration+1, angle2)
+		// var scale	= 1 * (nGeneration/maxGeneration)
+		// mesh.scale.set(scale, scale, scale)
+		// mesh.scale
+		// 	.set(1,1,1)
+		// 	.multiplyScalar(scale*2)
 	}
 	
-	//////////////////////////////////////////////////////////////////////////////////
-	//		comment								//
-	//////////////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////////////
-	//		add an object and make it move					//
-	//////////////////////////////////////////////////////////////////////////////////	
-
-	var heightMap	= THREEx.Terrain.allocateHeightMap(256,256)
-	THREEx.Terrain.simplexHeightMap(heightMap)
-	
-	var geometry	= THREEx.Terrain.heightMapToPlaneGeometry(heightMap)
-	THREEx.Terrain.heightMapToVertexColor(heightMap, geometry)
-	
-	var material	= new THREE.MeshPhongMaterial({
-		// shading		: THREE.SmoothShading,
-		vertexColors 	: THREE.VertexColors,
-	});
-	var ground	= new THREE.Mesh( geometry, material );
-	ground.lookAt(new THREE.Vector3(0,1,0))
-	ground.position.z	= -1
-	scene.add( ground );
-	ground.scale.y	= 4
-	ground.scale.x	= 4
-	ground.scale.z	= 0.2
-	ground.scale.multiplyScalar(20) 	
-	
-	//////////////////////////////////////////////////////////////////////////////////
-	//		sprite for each nodes						//
-	//////////////////////////////////////////////////////////////////////////////////
-			
+	// var circleGeometry	= new THREE.SphereGeometry(1, 32, 32)
 	var material	= new THREE.SpriteMaterial({
 		map			: THREE.ImageUtils.loadTexture('images/sprite.png'),
 		useScreenCoordinates	: false,
 		color			: 'red',
 	});
-	nodes.forEach(function(node){
-		var mesh	= new THREE.Sprite( material )
+
+	function createNode(color, nGeneration){
+		var mesh	= new THREE.Sprite( material );
+		mesh.scale.set(1,1,1).multiplyScalar(10)
 		scene.add(mesh)
 
-		mesh.scale.set(1,1,1).multiplyScalar(node.size)
+		// assign the mesh
+		mesh.userData.color		= color 
+		mesh.userData.nGeneration	= nGeneration
+		
+		updateNode(mesh)
 
-		
-		mesh.position.copy(node.position)
-		
-		var position	= mesh.position
-		// position.y	= THREEx.Terrain.planeToHeightMapCoords(heightMap, ground, position.x, position.z)
-	})
+		// // bind 'mouseover'
+		// domEvents.bind(mesh, 'mouseover', function(event){
+		// 	material.color.set( 'blue' )
+		// 	document.body.style.cursor	= 'pointer';
+		// 	// updateNode(mesh)
+		// 	// console.log('mouseover')
+		// }, false)
+			
+		// // bind 'mouseout'
+		// domEvents.bind(mesh, 'mouseout', function(event){
+		// 	document.body.style.cursor	= 'default';
+		// 	updateNode(mesh)
+		// }, false)
+		// return the built mesh
+		return mesh			
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		add an object and make it move					//
+	//////////////////////////////////////////////////////////////////////////////////
+;(function(){
+	var material	= new THREE.SpriteMaterial({
+		map			: THREE.ImageUtils.loadTexture('images/sprite.png'),
+		useScreenCoordinates	: false,
+		color			: 'red',
+	});
+	var sprite	= new THREE.Sprite( material );
+	sprite.scale.set(1,1,1).multiplyScalar(10)
+	scene.add(sprite)
+
+	var sprite2	= new THREE.Sprite( material );
+	sprite.scale.set(1,1,1).multiplyScalar(10*10)
+	sprite2.position.x	= 1
+	scene.add(sprite2)
+})()
+
+	// var container		= new THREE.Object3D
+	// scene.add(container)
+	// // // container.lookAt(new THREE.Vector3(0, 1, 0))
+
+	// var maxGeneration	= 15;
+	// var maxGeneration	= 2;
+	// var firstGeneration	= createNode('white', 0)
+	// var generation		= firstGeneration
+	// container.add(generation)
+	// var nGeneration = 1;
+	// setInterval(function(){
+	// 	nGeneration++
+	// 	if( nGeneration > maxGeneration )	return
+	// 	generation	= computerNextGeneration(generation, nGeneration)		
+	// }, 1000*0.1)
+
+	function computerNextGeneration(root, nGeneration){
+		root.traverse(function(object3d){
+			if( nGeneration === object3d.userData.nGeneration )	return
+
+			// inter generation balls distance
+			var distance	= 1
+			var child1	= createNode('white', nGeneration)
+			child1.position.y	= -distance
+			object3d.add(child1)
+
+			var child2	= createNode('white', nGeneration)
+			child2.position.y	= distance
+			object3d.add(child2)					
+			
+			object3d.rotateZ(Math.PI/5)				
+			// var rotationIdx	= nGeneration % 3
+			// if( rotationIdx === 0 ){
+			// 	object3d.rotateZ(Math.PI/5)				
+			// }else if( rotationIdx === 1 ){
+			// 	object3d.rotateZ(Math.PI/9)					
+			// }else if( rotationIdx === 2 ){
+			// 	object3d.rotateZ(Math.PI/11)					
+			// }
+
+			object3d.userData.color	= 'black'
+			updateNode(object3d)
+		})
+		return root
+	}
+
+	
+	
 	
 	//////////////////////////////////////////////////////////////////////////////////
 	//		Camera Controls							//
 	//////////////////////////////////////////////////////////////////////////////////
-	// var mouse	= {x : 0, y : 0}
-	// document.addEventListener('mousemove', function(event){
-	// 	mouse.x	= (event.clientX / window.innerWidth ) - 0.5
-	// 	mouse.y	= (event.clientY / window.innerHeight) - 0.5
-	// }, false)
-	// onRenderFcts.push(function(delta, now){
-	// 	camera.position.x += (mouse.x*10 - camera.position.x) * (delta*3)
-	// 	camera.position.y += (mouse.y*40 - camera.position.y) * (delta*3)
-	// 	camera.lookAt( scene.position )
-	// })
-	camera.position.set(0,50,0)
-	camera.lookAt(new THREE.Vector3(0,-1,0))
-	
 	var controls = new THREE.FlyControls( camera );
-	controls.movementSpeed = 20;
+	controls.movementSpeed = 10;
 	controls.rollSpeed = Math.PI / 20;
 	onRenderFcts.push(function(delta){
 		controls.update( delta );

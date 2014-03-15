@@ -11,6 +11,7 @@
 require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
 	, 'bower_components/threex.domevents/threex.domevents.js'
 	, 'bower_components/threex.terrain/package.require.js'
+	, 'bower_components/threex.terrain/examples/bower_components/threex.minecraft/package.require.js'
 	], function(){
 	// detect WebGL
 	if( !Detector.webgl ){
@@ -129,25 +130,49 @@ require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
 		vertexColors 	: THREE.VertexColors,
 	});
 	var ground	= new THREE.Mesh( geometry, material );
-	ground.lookAt(new THREE.Vector3(0,1,0))
+	ground.rotateX(-Math.PI/2)
 	ground.position.z	= -1
 	scene.add( ground );
 	ground.scale.y	= 4
 	ground.scale.x	= 4
 	ground.scale.z	= 0.2
 	ground.scale.multiplyScalar(20) 	
+
+	// ground.scale.x	= 20*10
+	// ground.scale.y	= 20*10
+	// ground.scale.z	= 1*10 
 	
 	//////////////////////////////////////////////////////////////////////////////////
 	//		sprite for each nodes						//
 	//////////////////////////////////////////////////////////////////////////////////
 			
-	var material	= new THREE.SpriteMaterial({
-		map			: THREE.ImageUtils.loadTexture('images/sprite.png'),
-		useScreenCoordinates	: false,
-		color			: 'red',
-	});
+	// var material	= new THREE.SpriteMaterial({
+	// 	map			: THREE.ImageUtils.loadTexture('images/sprite.png'),
+	// 	useScreenCoordinates	: false,
+	// 	color			: 'red',
+	// });
+	// nodes.forEach(function(node){
+	// 	var mesh	= new THREE.Sprite( material )
+	// 	scene.add(mesh)
+
+	// 	mesh.scale.set(1,1,1).multiplyScalar(node.size)
+
+		
+	// 	mesh.position.copy(node.position)
+		
+	// 	var position	= mesh.position
+	// 	position.y	= THREEx.Terrain.planeToHeightMapCoords(heightMap, ground, position.x, position.z)
+	// })
+	//////////////////////////////////////////////////////////////////////////////////
+	//		sprite for each nodes						//
+	//////////////////////////////////////////////////////////////////////////////////
+	var material	= new THREE.MeshPhongMaterial({
+		side	: THREE.DoubleSide
+	})
+			
+	var sphereGeometry	= new THREE.SphereGeometry(1, 32, 32)
 	nodes.forEach(function(node){
-		var mesh	= new THREE.Sprite( material )
+		var mesh	= new THREE.Mesh( sphereGeometry, material )
 		scene.add(mesh)
 
 		mesh.scale.set(1,1,1).multiplyScalar(node.size)
@@ -156,9 +181,51 @@ require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
 		mesh.position.copy(node.position)
 		
 		var position	= mesh.position
-		// position.y	= THREEx.Terrain.planeToHeightMapCoords(heightMap, ground, position.x, position.z)
+		position.y	= THREEx.Terrain.planeToHeightMapCoords(heightMap, ground, position.x, position.z)
+	})
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		comment								//
+	//////////////////////////////////////////////////////////////////////////////////
+
+	var player	= new THREEx.MinecraftPlayer()
+	scene.add(player.character.root)
+	onRenderFcts.push(function(delta, now){
+		player.update(delta, now)
 	})
 	
+	onRenderFcts.push(function(delta, now){
+		var position	= player.character.root.position
+		position.y	= THREEx.Terrain.planeToHeightMapCoords(heightMap, ground, position.x, position.z)
+	})
+	
+	
+	// attach camera to player
+	player.character.root.add(camera)
+	camera.position.z	= -2
+	camera.position.y	= 1
+	camera.lookAt(new THREE.Vector3(0,0.5,2))	
+
+	
+	//////////////////////////////////////////////////////////////////////////////////
+	//		controls.input based on keyboard				//
+	//////////////////////////////////////////////////////////////////////////////////
+	
+	document.body.addEventListener('keydown', function(event){
+		var input	= player.controls.input
+		if( event.keyCode === 'W'.charCodeAt(0) )	input.up	= true
+		if( event.keyCode === 'S'.charCodeAt(0) )	input.down	= true
+		if( event.keyCode === 'A'.charCodeAt(0) )	input.left	= true
+		if( event.keyCode === 'D'.charCodeAt(0) )	input.right	= true
+	})
+	document.body.addEventListener('keyup', function(event){
+		var input	= player.controls.input
+		if( event.keyCode === 'W'.charCodeAt(0) )	input.up	= false
+		if( event.keyCode === 'S'.charCodeAt(0) )	input.down	= false
+		if( event.keyCode === 'A'.charCodeAt(0) )	input.left	= false
+		if( event.keyCode === 'D'.charCodeAt(0) )	input.right	= false
+	})
+
 	//////////////////////////////////////////////////////////////////////////////////
 	//		Camera Controls							//
 	//////////////////////////////////////////////////////////////////////////////////
@@ -172,15 +239,21 @@ require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
 	// 	camera.position.y += (mouse.y*40 - camera.position.y) * (delta*3)
 	// 	camera.lookAt( scene.position )
 	// })
-	camera.position.set(0,50,0)
-	camera.lookAt(new THREE.Vector3(0,-1,0))
 	
-	var controls = new THREE.FlyControls( camera );
-	controls.movementSpeed = 20;
-	controls.rollSpeed = Math.PI / 20;
-	onRenderFcts.push(function(delta){
-		controls.update( delta );
-	})
+	
+	//////////////////////////////////////////////////////////////////////////////////
+	//		camera FlyControls						//
+	//////////////////////////////////////////////////////////////////////////////////
+	
+	// camera.position.set(0,50,0)
+	// camera.lookAt(new THREE.Vector3(0,-1,0))
+	
+	// var controls = new THREE.FlyControls( camera );
+	// controls.movementSpeed = 20;
+	// controls.rollSpeed = Math.PI / 20;
+	// onRenderFcts.push(function(delta){
+	// 	controls.update( delta );
+	// })
 
 	//////////////////////////////////////////////////////////////////////////////////
 	//		render the scene						//

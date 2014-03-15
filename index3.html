@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<script src='vendor/three.js/build/three.js'></script>
+<script src='vendor/three.js/examples/js/controls/FlyControls.js'></script>
+<script src="vendor/require.js/require.js"></script>
+<script src="vendor/three.js/examples/js/Detector.js"></script>
+<script src="vendor/threex.windowresize.js"></script>
+<script src="vendor/three.js/examples/js/SimplexNoise.js"></script>
+
+<body style='margin: 0px; background-color: white; overflow: hidden;'><script>
+require([ 'bower_components/threex.rendererstats/threex.rendererstats.js'
+	, 'bower_components/threex.domevents/threex.domevents.js'
+	, 'bower_components/threex.domevents/threex.linkify.js'
+	, 'bower_components/threex.terrain/package.require.js'
+	], function(){
+	// detect WebGL
+	if( !Detector.webgl ){
+		Detector.addGetWebGLMessage();
+		throw 'WebGL Not Available'
+	} 
+	// setup webgl renderer full page
+	var renderer	= new THREE.WebGLRenderer();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+	// setup a scene and camera
+	var scene	= new THREE.Scene();
+	var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
+	camera.position.z = 40;
+
+	// declare the rendering loop
+	var onRenderFcts= [];
+
+	// handle window resize events
+	var winResize	= new THREEx.WindowResize(renderer, camera)
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		init domEvents							//
+	//////////////////////////////////////////////////////////////////////////////////
+	
+	var domEvents	= new THREEx.DomEvents(camera, renderer.domElement)
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		use THREEx.RendererStats					//
+	//////////////////////////////////////////////////////////////////////////////////
+	var rendererStats	= new THREEx.RendererStats()
+	rendererStats.domElement.style.position	= 'absolute'
+	rendererStats.domElement.style.left	= '0px'
+	rendererStats.domElement.style.bottom	= '0px'
+	document.body.appendChild( rendererStats.domElement )
+	onRenderFcts.push(function(delta, now){
+		rendererStats.update(renderer);
+	})
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		add an object and make it move					//
+	//////////////////////////////////////////////////////////////////////////////////	
+
+	var heightMap	= THREEx.Terrain.allocateHeightMap(256,256)
+	THREEx.Terrain.simplexHeightMap(heightMap)
+	
+	var geometry	= THREEx.Terrain.heightMapToPlaneGeometry(heightMap)
+	THREEx.Terrain.heightMapToVertexColor(heightMap, geometry)
+	
+	var material	= new THREE.MeshPhongMaterial({
+		// shading		: THREE.SmoothShading,
+		vertexColors 	: THREE.VertexColors,
+	});
+	var ground	= new THREE.Mesh( geometry, material );
+	ground.lookAt(new THREE.Vector3(0,0,1))
+	ground.position.z	= -1
+	scene.add( ground );
+	ground.scale.y	= 4
+	ground.scale.x	= 4
+	ground.scale.z	= 1
+	ground.scale.multiplyScalar(10) 
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		default 3 points lightning					//
+	//////////////////////////////////////////////////////////////////////////////////
+	
+	var ambientLight= new THREE.AmbientLight( 0x020202 )
+	scene.add( ambientLight)
+	var frontLight	= new THREE.DirectionalLight('white', 1)
+	frontLight.position.set(0.5, 0.5, 2)
+	scene.add( frontLight )
+	var backLight	= new THREE.DirectionalLight('white', 0.75)
+	backLight.position.set(-0.5, -0.5, -2)
+	scene.add( backLight )
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		createNode()							//
+	//////////////////////////////////////////////////////////////////////////////////
+
+	function updateNode(mesh){
+		var color	= mesh.userData.color
+		var nGeneration	= mesh.userData.nGeneration
+		// compute scale based on generation
+		var scaleAdjust	= 0.96
+		var scale	= Math.pow(scaleAdjust,nGeneration)
+
+		// var scale	= 1 * (nGeneration/maxGeneration)
+		mesh.scale.set(scale, scale, scale)
+
+		// set color
+		mesh.material.color.set( mesh.userData.color === 'white' ? 'white' : '#202020' )
+		mesh.material.color.set('red')
+	}
+	
+	var circleGeometry	= new THREE.SphereGeometry(1, 32, 32)
+	function createNode(color, nGeneration){
+		// create the mesh
+		var material	= new THREE.MeshPhongMaterial({
+			side	: THREE.DoubleSide
+		})
+		var mesh	= new THREE.Mesh( circleGeometry, material )
+
+		// assign the mesh
+		mesh.userData.color		= color 
+		mesh.userData.nGeneration	= nGeneration
+		
+		updateNode(mesh)
+
+		// // bind 'mouseover'
+		// domEvents.bind(mesh, 'mouseover', function(event){
+		// 	material.color.set( 'blue' )
+		// 	document.body.style.cursor	= 'pointer';
+		// 	// updateNode(mesh)
+		// 	// console.log('mouseover')
+		// }, false)
+			
+		// // bind 'mouseout'
+		// domEvents.bind(mesh, 'mouseout', function(event){
+		// 	document.body.style.cursor	= 'default';
+		// 	updateNode(mesh)
+		// }, false)
+		// return the built mesh
+		return mesh			
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		add an object and make it move					//
+	//////////////////////////////////////////////////////////////////////////////////
+
+	var container		= new THREE.Object3D
+	scene.add(container)
+	// container.lookAt(new THREE.Vector3(0, 1, 0))
+
+	var maxGeneration	= 12;
+	var maxGeneration	= 5;
+	var firstGeneration	= createNode('white', 0)
+	var generation		= firstGeneration
+	container.add(generation)
+
+	var nGeneration = 1;
+	setInterval(function(){
+		nGeneration++
+		if( nGeneration > maxGeneration )	return
+		generation	= computerNextGeneration(generation, nGeneration)		
+	}, 1000*0.1)
+
+	function computerNextGeneration(root, nGeneration){
+		root.traverse(function(object3d){
+			var isLeaf	= object3d.children.length === 0 ? true : false
+			var color	= object3d.userData.color
+
+			if( nGeneration === object3d.userData.nGeneration )	return
+
+			if( color === 'white' ){
+				// inter generation balls distance
+				var distance	= 5
+				var child1	= createNode('white', nGeneration)
+				child1.position.y	= -distance
+				object3d.add(child1)
+
+				var child2	= createNode('white', nGeneration)
+				child2.position.y	= distance
+				object3d.add(child2)					
+				
+				var rotationIdx	= nGeneration % 3
+			var rotationIdx	= 0
+				if( rotationIdx === 0 ){
+					object3d.rotateZ(Math.PI/5)				
+				}else if( rotationIdx === 1 ){
+					object3d.rotateZ(Math.PI/9)					
+				}else if( rotationIdx === 2 ){
+					object3d.rotateZ(Math.PI/11)					
+				}
+
+				object3d.userData.color	= 'black'
+				updateNode(object3d)
+			}else if( color === 'black' ){
+				// left blank on purpose
+			}else	console.assert(false);
+		})
+		return root
+	}
+
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Camera Controls							//
+	//////////////////////////////////////////////////////////////////////////////////
+	// var mouse	= {x : 0, y : 0}
+	// document.addEventListener('mousemove', function(event){
+	// 	mouse.x	= (event.clientX / window.innerWidth ) - 0.5
+	// 	mouse.y	= (event.clientY / window.innerHeight) - 0.5
+	// }, false)
+	// onRenderFcts.push(function(delta, now){
+	// 	camera.position.x += (mouse.x*10 - camera.position.x) * (delta*3)
+	// 	camera.position.y += (mouse.y*40 - camera.position.y) * (delta*3)
+	// 	camera.lookAt( scene.position )
+	// })
+	var controls = new THREE.FlyControls( camera );
+	controls.movementSpeed = 10;
+	controls.rollSpeed = Math.PI / 20;
+	onRenderFcts.push(function(delta){
+		controls.update( delta );
+	})
+	
+	//////////////////////////////////////////////////////////////////////////////////
+	//		rivers								//
+	//////////////////////////////////////////////////////////////////////////////////
+
+if( true ){
+	var nRivers	= 10
+	for(var i = 0; i < nRivers; i++){
+		var positionBeg	= new THREE.Vector3(0,0,0)
+		var angle	= Math.random() * Math.PI*2 
+		var radius	= 2
+		positionBeg.x	= Math.cos(angle)*radius
+		positionBeg.y	= Math.sin(angle)*radius
+
+		var positionEnd	= new THREE.Vector3()
+		// var angle	= Math.random() * Math.PI*2 
+		var radius	= 15
+		positionEnd.x	= Math.cos(angle)*radius
+		positionEnd.y	= Math.sin(angle)*radius
+		var river	= buildRiver(positionBeg, positionEnd)
+		scene.add(river)
+	}
+	
+	function buildRiver(positionBeg, positionEnd){
+		var geometry	= new THREE.Geometry(); 
+		drawLightning(geometry.vertices, positionBeg, positionEnd, 10)
+		// build the rest of the lines
+		var material	= new THREE.LineBasicMaterial({
+			linewidth	: 4,
+			color		: 'blue',
+		});
+		var line	= new THREE.Line(geometry, material, THREE.LineStrip);
+		return line
+		// from http://krazydad.com/bestiary/bestiary_lightning.html
+		function drawLightning(vertices, point1, point2,displace){
+			var displaceMin	= 0.05
+			if( displace < displaceMin ){
+				if( vertices.length === 0 )	vertices.push(point1)
+				vertices.push(point2)
+			} else {
+				var middle	= point1.clone().add(point2).multiplyScalar(0.5)
+				middle.x	+= (Math.random()-0.5)*displace;
+				middle.y	+= (Math.random()-0.5)*displace;
+				drawLightning(vertices, point1, middle, displace/2);
+				drawLightning(vertices, middle, point2, displace/2);
+			}
+		}
+	}	
+}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		render the scene						//
+	//////////////////////////////////////////////////////////////////////////////////
+	onRenderFcts.push(function(){
+		renderer.render( scene, camera );	
+	})
+	
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Rendering Loop runner						//
+	//////////////////////////////////////////////////////////////////////////////////
+	var lastTimeMsec= null
+	requestAnimationFrame(function animate(nowMsec){
+		// keep looping
+		requestAnimationFrame( animate );
+		// measure time
+		lastTimeMsec	= lastTimeMsec || nowMsec-1000/60
+		var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec)
+		lastTimeMsec	= nowMsec
+		// call each update function
+		onRenderFcts.forEach(function(onRenderFct){
+			onRenderFct(deltaMsec/1000, nowMsec/1000)
+		})
+	})
+})
+</script></body>
